@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LITERACY HERO | Learn to Read</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Soft:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF5757;
+            --secondary: #FFDE59;
+            --accent: #7ED957;
+            --blue: #5CE1E6;
+            --text: #2C3E50;
+        }
+
+        body {
+            font-family: 'Lexend Soft', sans-serif;
+            background-color: var(--secondary);
+            color: var(--text);
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- DASHBOARD --- */
+        .top-nav {
+            width: 100%;
+            background: white;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .stat {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- THE MAP --- */
+        .map-container {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            border: 6px solid #fff;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .card:hover { transform: scale(1.03); }
+        .card:active { transform: translateY(5px); box-shadow: 0 5px 0 rgba(0,0,0,0.1); }
+
+        .card.locked { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
+
+        .icon { font-size: 80px; margin-bottom: 10px; }
+        .btn-label { font-size: 24px; font-weight: 700; display: block; }
+
+        /* --- PROGRESS BAR --- */
+        .progress-wrapper {
+            width: 80%;
+            background: #e0e0e0;
+            height: 25px;
+            border-radius: 50px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            border-radius: 50px;
+            transition: width 0.5s ease;
+        }
+
+        /* --- TRACING OVERLAY --- */
+        #activity-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #trace-canvas {
+            border: 5px dashed var(--blue);
+            background: white;
+            border-radius: 20px;
+            touch-action: none;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 40px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <div class="stat">🔥 <span id="streak">1</span></div>
+        <div id="language-pick">
+            <select id="lang-select" onchange="changeLang()" style="font-size: 20px; padding: 5px; border-radius: 10px;">
+                <option value="en-US">English</option>
+                <option value="es-ES">Español</option>
+                <option value="hi-IN">हिन्दी</option>
+                <option value="fr-FR">Français</option>
+            </select>
+        </div>
+        <div class="stat">⭐ <span id="points">0</span></div>
+    </div>
+
+    <div class="progress-wrapper">
+        <div id="progress-fill"></div>
+    </div>
+    <div id="percent-text" style="font-weight:bold;">0% COMPLETE</div>
+
+    <div class="map-container">
+        <div class="card" style="background-color: var(--blue);" onclick="startAdaptiveTest()">
+            <div class="icon">🧪</div>
+            <span class="btn-label">Level Test</span>
+        </div>
+
+        <div class="card" style="background-color: var(--accent);" onclick="playActivity('sounds')">
+            <div class="icon">🔊</div>
+            <span class="btn-label">Letter Sounds</span>
+        </div>
+
+        <div class="card" style="background-color: var(--primary); color: white;" onclick="playActivity('trace')">
+            <div class="icon">✏️</div>
+            <span class="btn-label">Trace Letters</span>
+        </div>
+
+        <div id="arcade-card" class="card locked" onclick="openArcade()">
+            <div class="icon">🕹️</div>
+            <span class="btn-label">The Arcade</span>
+            <small id="unlock-msg">Need 100 Points</small>
+        </div>
+    </div>
+
+    <div id="activity-overlay">
+        <button class="close-btn" onclick="closeActivity()">✖</button>
+        <h1 id="activity-title">Trace the Letter</h1>
+        <canvas id="trace-canvas" width="400" height="400"></canvas>
+        <button onclick="finishActivity()" style="margin-top:20px; padding:15px 40px; font-size:24px; border-radius:20px; background:var(--accent); border:none; cursor:pointer;">DONE!</button>
+    </div>
+
+    <script>
+        let state = {
+            points: 0,
+            streak: 1,
+            progress: 0,
+            difficulty: 1,
+            lang: 'en-US'
+        };
+
+        const synth = window.speechSynthesis;
+
+        function speak(text) {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = state.lang;
+            synth.speak(utter);
+        }
+
+        function updateUI() {
+            document.getElementById('points').innerText = state.points;
+            document.getElementById('progress-fill').style.width = state.progress + "%";
+            document.getElementById('percent-text').innerText = state.progress + "% COMPLETE";
+            
+            if (state.points >= 100) {
+                document.getElementById('arcade-card').classList.remove('locked');
+                document.getElementById('unlock-msg').innerText = "UNLOCKED!";
+            }
+        }
+
+        function playActivity(type) {
+            if(type === 'sounds') {
+                speak("Click a letter to hear its sound.");
+                // Here you'd pop up a letter board
+                state.progress += 10;
+                state.points += 20;
+            } else if (type === 'trace') {
+                document.getElementById('activity-overlay').style.display = 'flex';
+                initCanvas();
+            }
+            updateUI();
+        }
+
+        function startAdaptiveTest() {
+            speak("Let's find your level.");
+            let correct = confirm("Does 'Apple' start with A?"); 
+            if(correct) {
+                state.difficulty++;
+                state.points += 20;
+                speak("Great! It's getting harder now.");
+            } else {
+                state.difficulty = Math.max(1, state.difficulty - 1);
+                speak("No worries, let's practice more.");
+            }
+            updateUI();
+        }
+
+        function finishActivity() {
+            state.points += 20;
+            state.progress += 20;
+            if(state.progress > 100) state.progress = 100;
+            speak("Amazing! You earned 20 points.");
+            closeActivity();
+            updateUI();
+        }
+
+        function closeActivity() {
+            document.getElementById('activity-overlay').style.display = 'none';
+        }
+
+        function changeLang() {
+            state.lang = document.getElementById('lang-select').value;
+            speak("Language changed.");
+        }
+
+        // Simple Drawing Logic
+        function initCanvas() {
+            const canvas = document.getElementById('trace-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "300px Lexend Soft";
+            ctx.fillStyle = "#eee";
+            ctx.textAlign = "center";
+            ctx.fillText("A", 200, 300);
+
+            let drawing = false;
+            canvas.onmousedown = () => drawing = true;
+            canvas.onmouseup = () => drawing = false;
+            canvas.onmousemove = (e) => {
+                if(!drawing) return;
+                ctx.fillStyle = "#5CE1E6";
+                ctx.beginPath();
+                ctx.arc(e.offsetX, e.offsetY, 15, 0, Math.PI*2);
+                ctx.fill();
+            };
+        }
+
+        window.onload = () => {
+            speak("Welcome to Literacy Hero! Pick a bubble to start.");
+        };
+    </script>
+</body>
+</html>
