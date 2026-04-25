@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReadRise Literacy Platform</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    }
+    h1 {
+      margin-bottom: 4px;
+      font-size: 36px;
+    }
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+    input {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      border-radius: 16px;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+    }
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 18px;
+      background: #4f46e5;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 6px 6px 6px 0;
+    }
+    button.secondary {
+      background: #eef2ff;
+      color: #3730a3;
+    }
+    button.choice {
+      background: white;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      min-width: 120px;
+      min-height: 80px;
+      font-size: 28px;
+    }
+    button.correct {
+      background: #dcfce7;
+      border: 2px solid #22c55e;
+    }
+    button.wrong {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+    }
+    .language-list, .choices, .feedback-grid, .lesson-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .language-list {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .tile {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .selected {
+      border: 2px solid #4f46e5;
+      background: #eef2ff;
+    }
+    .question-box {
+      background: #f1f5f9;
+      border-radius: 20px;
+      padding: 20px;
+      margin: 18px 0;
+    }
+    .feedback-grid, .lesson-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .good {
+      background: #dcfce7;
+    }
+    .practice {
+      background: #fef3c7;
+    }
+    .progress {
+      height: 16px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 25%;
+      background: #4f46e5;
+    }
+    .big-letter, .trace-letter {
+      height: 160px;
+      display: grid;
+      place-items: center;
+      border-radius: 20px;
+      font-size: 90px;
+      font-weight: bold;
+    }
+    .big-letter {
+      background: #eef2ff;
+      color: #4f46e5;
+      cursor: pointer;
+    }
+    .trace-letter {
+      border: 4px dashed #cbd5e1;
+      color: #cbd5e1;
+      background: #f8fafc;
+    }
+    .streak {
+      display: inline-block;
+      background: white;
+      color: #ea580c;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="streak" id="streak">🔥 1 day streak</div>
+    <div class="card">
+      <h1 id="appName">ReadRise</h1>
+      <p class="subtitle" id="tagline">Learn to read and write in your language.</p>
+
+      <div id="screen"></div>
+    </div>
+  </div>
+
+  <script>
+    const languages = [
+      {
+        code: "en",
+        name: "English",
+        nativeName: "English",
+        letters: ["A", "B", "C", "M", "S", "T"],
+        t: {
+          tagline: "Learn to read and write in your language.",
+          search: "Search for your language",
+          choose: "Choose your language",
+          start: "Start learning",
+          testTitle: "First Understanding Test",
+          testSubtitle: "Answer a few questions so we know what to help you improve.",
+          correct: "Correct!",
+          wrong: "Not yet. Let's keep practicing.",
+          next: "Next",
+          feedbackTitle: "Your learning plan",
+          goodAt: "You are strong at",
+          improve: "Practice next",
+          startLesson: "Start lesson",
+          lessonTitle: "Letter Sounds Lesson",
+          progress: "Lesson progress",
+          trace: "Trace the letter",
+          tap: "Tap to hear the sound",
+          complete: "Complete lesson",
+          done: "Great work! You completed today's lesson.",
+          read: "Read aloud",
+          skills: {
+            letter: "recognizing letters",
+            sound: "letter sounds",
+            word: "reading simple words",
+            sentence: "understanding sentences"
+          }
+        }
+      },
+      {
+        code: "es",
+        name: "Spanish",
+        nativeName: "Español",
+        letters: ["A", "B", "C", "M", "S", "T"],
+        t: {
+          tagline: "Aprende a leer y escribir en tu idioma.",
+          search: "Busca tu idioma",
+          choose: "Elige tu idioma",
+          start: "Empezar",
+          testTitle: "Primera prueba de comprensión",
+          testSubtitle: "Responde unas preguntas para saber qué debes mejorar.",
+          correct: "¡Correcto!",
+          wrong: "Todavía no. Vamos a practicar.",
+          next: "Siguiente",
+          feedbackTitle: "Tu plan de aprendizaje",
+          goodAt: "Eres fuerte en",
+          improve: "Practica ahora",
+          startLesson: "Empezar lección",
+          lessonTitle: "Lección de sonidos de letras",
+          progress: "Progreso",
+          trace: "Traza la letra",
+          tap: "Toca para escuchar el sonido",
+          complete: "Completar lección",
+          done: "¡Muy bien! Completaste la lección de hoy.",
+          read: "Leer en voz alta",
+          skills: {
+            letter: "reconocer letras",
+            sound: "sonidos de letras",
+            word: "leer palabras simples",
+            sentence: "entender oraciones"
+          }
+        }
+      },
+      {
+        code: "fr",
+        name: "French",
+        nativeName: "Français",
+        letters: ["A", "B", "C", "M", "S", "T"],
+        t: {
+          tagline: "Apprends à lire et à écrire dans ta langue.",
+          search: "Cherche ta langue",
+          choose: "Choisis ta langue",
+          start: "Commencer",
+          testTitle: "Premier test de compréhension",
+          testSubtitle: "Réponds à quelques questions pour savoir quoi améliorer.",
+          correct: "Correct !",
+          wrong: "Pas encore. Continuons à pratiquer.",
+          next: "Suivant",
+          feedbackTitle: "Ton plan d’apprentissage",
+          goodAt: "Tu es fort en",
+          improve: "À pratiquer",
+          startLesson: "Commencer la leçon",
+          lessonTitle: "Leçon des sons des lettres",
+          progress: "Progression",
+          trace: "Trace la lettre",
+          tap: "Appuie pour écouter le son",
+          complete: "Terminer",
+          done: "Bravo ! Tu as terminé la leçon du jour.",
+          read: "Lire à voix haute",
+          skills: {
+            letter: "reconnaître les lettres",
+            sound: "les sons des lettres",
+            word: "lire des mots simples",
+            sentence: "comprendre des phrases"
+          }
+        }
+      },
+      {
+        code: "ar",
+        name: "Arabic",
+        nativeName: "العربية",
+        rtl: true,
+        letters: ["ا", "ب", "ت", "م", "س", "ل"],
+        t: {
+          tagline: "تعلّم القراءة والكتابة بلغتك.",
+          search: "ابحث عن لغتك",
+          choose: "اختر لغتك",
+          start: "ابدأ التعلم",
+          testTitle: "اختبار الفهم الأول",
+          testSubtitle: "أجب عن بعض الأسئلة لنعرف ما تحتاج إلى تحسينه.",
+          correct: "صحيح!",
+          wrong: "ليس بعد. لنتمرن أكثر.",
+          next: "التالي",
+          feedbackTitle: "خطة التعلم الخاصة بك",
+          goodAt: "أنت جيد في",
+          improve: "تمرّن الآن على",
+          startLesson: "ابدأ الدرس",
+          lessonTitle: "درس أصوات الحروف",
+          progress: "تقدم الدرس",
+          trace: "تتبع الحرف",
+          tap: "اضغط لسماع الصوت",
+          complete: "أكمل الدرس",
+          done: "عمل رائع! أكملت درس اليوم.",
+          read: "اقرأ بصوت عالٍ",
+          skills: {
+            letter: "التعرف على الحروف",
+            sound: "أصوات الحروف",
+            word: "قراءة كلمات بسيطة",
+            sentence: "فهم الجمل"
+          }
+        }
+      },
+      {
+        code: "hi",
+        name: "Hindi",
+        nativeName: "हिन्दी",
+        letters: ["अ", "आ", "क", "म", "स", "त"],
+        t: {
+          tagline: "अपनी भाषा में पढ़ना और लिखना सीखें।",
+          search: "अपनी भाषा खोजें",
+          choose: "अपनी भाषा चुनें",
+          start: "सीखना शुरू करें",
+          testTitle: "पहली समझ परीक्षा",
+          testSubtitle: "कुछ सवालों के जवाब दें ताकि हम जानें कि क्या सुधारना है।",
+          correct: "सही!",
+          wrong: "अभी नहीं। चलो अभ्यास करते हैं।",
+          next: "आगे",
+          feedbackTitle: "आपकी सीखने की योजना",
+          goodAt: "आप इसमें अच्छे हैं",
+          improve: "अब अभ्यास करें",
+          startLesson: "पाठ शुरू करें",
+          lessonTitle: "अक्षर ध्वनि पाठ",
+          progress: "पाठ प्रगति",
+          trace: "अक्षर को ट्रेस करें",
+          tap: "ध्वनि सुनने के लिए टैप करें",
+          complete: "पाठ पूरा करें",
+          done: "बहुत बढ़िया! आपने आज का पाठ पूरा किया।",
+          read: "ज़ोर से पढ़ें",
+          skills: {
+            letter: "अक्षरों को पहचानना",
+            sound: "अक्षर ध्वनियाँ",
+            word: "सरल शब्द पढ़ना",
+            sentence: "वाक्य समझना"
+          }
+        }
+      }
+    ];
+
+    let language = languages[0];
+    let screen = "language";
+    let query = "";
+    let difficulty = 1;
+    let results = [];
+    let selected = null;
+    let lessonStep = 0;
+
+    const screenEl = document.getElementById("screen");
+
+    function setStreak() {
+      const today = new Date().toDateString();
+      const lastVisit = localStorage.getItem("readrise-last-visit");
+      let streak = Number(localStorage.getItem("readrise-streak") || "1");
+
+      if (lastVisit !== today) {
+        streak += 1;
+        localStorage.setItem("readrise-streak", String(streak));
+        localStorage.setItem("readrise-last-visit", today);
+      }
+
+      document.getElementById("streak").textContent = "🔥 " + streak + " day streak";
+    }
+
+    function speak(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language.code;
+      utterance.rate = 0.85;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function questions() {
+      const [a, b, c, m, s, t] = language.letters;
+      return [
+        { difficulty: 1, skill: "letter", prompt: `Find ${a}`, answer: a, choices: [a, b, c] },
+        { difficulty: 2, skill: "sound", prompt: `Which letter makes this sound: ${m}?`, answer: m, choices: [s, m, t] },
+        { difficulty: 3, skill: "word", prompt: "Choose the simple word", answer: "mat", choices: ["mat", "xzq", "btp"] },
+        { difficulty: 4, skill: "sentence", prompt: "Which sentence makes sense?", answer: "I can read.", choices: ["Read can I.", "I can read.", "Can I."] },
+        { difficulty: 5, skill: "word", prompt: "Choose the longer word", answer: "basket", choices: ["bat", "basket", "as"] }
+      ];
+    }
+
+    function currentQuestion() {
+      return questions().find(q => q.difficulty === difficulty) || questions()[0];
+    }
+
+    function updateHeader() {
+      document.body.dir = language.rtl ? "rtl" : "ltr";
+      document.getElementById("tagline").textContent = language.t.tagline;
+    }
+
+    function render() {
+      updateHeader();
+      const t = language.t;
+
+      if (screen === "language") {
+        const filtered = languages.filter(l =>
+          (l.name + " " + l.nativeName).toLowerCase().includes(query.toLowerCase())
+        );
+
+        screenEl.innerHTML = `
+          <button class="secondary" onclick="speak('${t.tagline.replaceAll("'", "\\'")}')">🔊 ${t.read}</button>
+          <h2>${t.choose}</h2>
+          <input placeholder="${t.search}" value="${query}" oninput="query=this.value; render();" />
+          <div class="language-list">
+            ${filtered.map(l => `
+              <button class="tile ${language.code === l.code ? "selected" : ""}" onclick="selectLanguage('${l.code}')">
+                <strong>${l.nativeName}</strong><br/>
+                <span class="subtitle">${l.name}</span>
+              </button>
+            `).join("")}
+          </div>
+          <button onclick="screen='test'; render();">${t.start} →</button>
+        `;
+      }
+
+      if (screen === "test") {
+        const q = currentQuestion();
+        screenEl.innerHTML = `
+          <button class="secondary" onclick="speak('${t.testTitle.replaceAll("'", "\\'")}')">🔊 ${t.read}</button>
+          <h2>${t.testTitle}</h2>
+          <p class="subtitle">${t.testSubtitle}</p>
+          <div class="question-box">
+            <p class="subtitle">Difficulty ${difficulty}</p>
+            <h2>${q.prompt}</h2>
+            <button class="secondary" onclick="speak('${q.prompt.replaceAll("'", "\\'")}')">🔊 Hear question</button>
+          </div>
+          <div class="choices">
+            ${q.choices.map(choice => `
+              <button class="choice ${selected && selected.choice === choice ? (selected.correct ? "correct" : "wrong") : ""}" 
+                onclick="answer('${choice.replaceAll("'", "\\'")}')" ${selected ? "disabled" : ""}>
+                ${choice}
+              </button>
+            `).join("")}
+          </div>
+          ${selected ? `
+            <div class="question-box">
+              <strong>${selected.correct ? t.correct : t.wrong}</strong><br/>
+              <button onclick="nextQuestion()">${results.length >= 4 ? t.feedbackTitle : t.next}</button>
+            </div>
+          ` : ""}
+        `;
+      }
+
+      if (screen === "feedback") {
+        const score = {};
+        ["letter", "sound", "word", "sentence"].forEach(skill => score[skill] = { correct: 0, total: 0 });
+        results.forEach(r => {
+          score[r.skill].total++;
+          if (r.correct) score[r.skill].correct++;
+        });
+
+        const strong = Object.keys(score).filter(skill => score[skill].total && score[skill].correct / score[skill].total >= 0.7);
+        const weak = Object.keys(score).filter(skill => !score[skill].total || score[skill].correct / Math.max(score[skill].total, 1) < 0.7);
+
+        screenEl.innerHTML = `
+          <button class="secondary" onclick="speak('${t.feedbackTitle.replaceAll("'", "\\'")}')">🔊 ${t.read}</button>
+          <h2>${t.feedbackTitle}</h2>
+          <p class="subtitle">Great job. Here is what you should work on next.</p>
+          <div class="feedback-grid">
+            <div class="tile good">
+              <strong>✅ ${t.goodAt}</strong>
+              ${(strong.length ? strong : ["letter"]).map(skill => `<p>${t.skills[skill]}</p>`).join("")}
+            </div>
+            <div class="tile practice">
+              <strong>⚠️ ${t.improve}</strong>
+              ${(weak.length ? weak : ["word"]).slice(0, 3).map(skill => `<p>${t.skills[skill]}</p>`).join("")}
+            </div>
+          </div>
+          <button onclick="screen='lesson'; render();">${t.startLesson} →</button>
+        `;
+      }
+
+      if (screen === "lesson") {
+        const letter = language.letters[lessonStep] || language.letters[0];
+        const percent = Math.round(((lessonStep + 1) / 4) * 100);
+
+        screenEl.innerHTML = `
+          <button class="secondary" onclick="speak('${t.lessonTitle.replaceAll("'", "\\'")}')">🔊 ${t.read}</button>
+          <h2>${t.lessonTitle}</h2>
+          <p>${t.progress}: <strong>${percent}%</strong></p>
+          <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
+
+          <div class="lesson-grid">
+            <div class="tile">
+              <strong>🔊 ${t.tap}</strong>
+              <div class="big-letter" onclick="speak('${letter}')">${letter}</div>
+            </div>
+            <div class="tile">
+              <strong>✏️ ${t.trace}</strong>
+              <div class="trace-letter">${letter}</div>
+              <p class="subtitle">Prototype: a real version would check finger or mouse tracing.</p>
+            </div>
+          </div>
+
+          ${lessonStep < 3
+            ? `<button onclick="lessonStep++; render();">${t.next}</button>`
+            : `<div class="question-box"><strong>${t.done}</strong><br/><button onclick="resetApp()">${t.complete}</button></div>`
+          }
+        `;
+      }
+    }
+
+    function selectLanguage(code) {
+      language = languages.find(l => l.code === code);
+      speak(language.nativeName);
+      render();
+    }
+
+    function answer(choice) {
+      const q = currentQuestion();
+      const correct = choice === q.answer;
+
+      selected = { choice, correct };
+      results.push({ skill: q.skill, correct, difficulty });
+
+      speak(correct ? language.t.correct : language.t.wrong);
+      render();
+    }
+
+    function nextQuestion() {
+      difficulty = Math.max(1, Math.min(5, difficulty + (selected.correct ? 1 : -1)));
+      selected = null;
+
+      if (results.length >= 4) {
+        screen = "feedback";
+      }
+
+      render();
+    }
+
+    function resetApp() {
+      screen = "language";
+      difficulty = 1;
+      results = [];
+      selected = null;
+      lessonStep = 0;
+      render();
+    }
+
+    setStreak();
+    render();
+  </script>
+</body>
+</html>
